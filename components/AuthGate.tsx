@@ -2,26 +2,36 @@
 
 import { useEffect, useState } from "react";
 
+import { usePathname } from 'next/navigation'
 import { useRouter } from "next/navigation";
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const [checked, setChecked] = useState(false);
 
+    const pathname = usePathname()
+
     useEffect(() => {
-        // Check auth on client side via localStorage
-        const user = typeof window !== 'undefined' ? localStorage.getItem('authUser') : null;
-        if (!user) {
-            router.push('/login');
-        } else {
-            // if first-login flag present, redirect to create-user
-            const first = localStorage.getItem('isFirstLogin');
-            if (first === 'true') {
-                router.push('/create-user');
-            }
+        // Allow unauthenticated access to login/create-user pages
+        if (pathname === '/login' || pathname === '/create-user') {
+            setChecked(true)
+            return
         }
-        setChecked(true);
-    }, [router]);
+        ; (async () => {
+            try {
+                const res = await fetch('/api/auth/me', { credentials: 'include' })
+                if (res.status === 401) {
+                    router.push('/login')
+                    return
+                }
+                // If OK, proceed
+            } catch {
+                router.push('/login')
+                return
+            }
+            setChecked(true)
+        })()
+    }, [router, pathname])
 
     if (!checked) return null;
     return <>{children}</>;

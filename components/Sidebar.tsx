@@ -43,17 +43,30 @@ export default function Sidebar() {
     }, [theme]);
 
     useEffect(() => {
-        if (typeof window === 'undefined') return
-        const u = localStorage.getItem('authUser')
-        if (u) {
-            try { setUsername(JSON.parse(u).username) } catch { setUsername(null) }
-        } else setUsername(null)
+        ; (async () => {
+            try {
+                const res = await fetch('/api/auth/me', { credentials: 'include' })
+                if (!res.ok) {
+                    setUsername(null)
+                    return
+                }
+                const data = await res.json().catch(() => null)
+                if (data && data.username) setUsername(data.username)
+                else setUsername(null)
+            } catch {
+                setUsername(null)
+            }
+        })()
     }, [])
 
     if (pathname === '/login' || pathname === '/create-user') return null
 
-    function logout() {
-        localStorage.removeItem('authUser')
+    async function logout() {
+        try {
+            await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+        } catch {
+            // ignore
+        }
         window.location.href = '/login'
     }
 

@@ -31,7 +31,7 @@ export default function GSTPage() {
   useEffect(() => {
     ; (async () => {
       try {
-        const res = await fetch('/api/gst')
+        const res = await fetch('/api/gst', { credentials: 'include' })
         const data = await res.json().catch(() => null)
         if (res.status === 401) {
           setCrudToast({ open: true, msg: 'Unauthorized - please login', onClose: () => setCrudToast({ open: false, msg: '' }) })
@@ -62,13 +62,13 @@ export default function GSTPage() {
     const body: PostPayload = { gstNumber, businessName, other_details: otherDetails };
     if (editingRow) body.id = editingRow.id;
     try {
-      const postRes = await fetch('/api/gst', { method: 'POST', body: JSON.stringify(body) })
+      const postRes = await fetch('/api/gst', { method: 'POST', body: JSON.stringify(body), credentials: 'include' })
       if (postRes.status === 401) {
         setCrudToast({ open: true, msg: 'Unauthorized - please login', onClose: () => setCrudToast({ open: false, msg: '' }) })
         router.push('/login')
         return
       }
-      const res = await fetch('/api/gst')
+      const res = await fetch('/api/gst', { credentials: 'include' })
       const list = await res.json().catch(() => null)
       if (res.ok && Array.isArray(list)) setRows(list)
       else setRows([])
@@ -87,7 +87,7 @@ export default function GSTPage() {
   async function confirmDelete() {
     if (!pendingDelete) return;
     const id = pendingDelete.id;
-    await fetch(`/api/gst?id=${id}`, { method: 'DELETE' });
+    await fetch(`/api/gst?id=${id}`, { method: 'DELETE', credentials: 'include' });
     setRows((r) => r.filter((x) => x.id !== id));
     setConfirmOpen(false);
     setCrudToast({ open: true, msg: 'GST entry deleted', actionLabel: 'Undo', onAction: undoDelete });
@@ -97,13 +97,13 @@ export default function GSTPage() {
     if (!pendingDelete) return;
     const payload = { gstNumber: pendingDelete.gstNumber, businessName: pendingDelete.businessName };
     try {
-      const postRes = await fetch('/api/gst', { method: 'POST', body: JSON.stringify(payload) })
+      const postRes = await fetch('/api/gst', { method: 'POST', body: JSON.stringify(payload), credentials: 'include' })
       if (postRes.status === 401) {
         setCrudToast({ open: true, msg: 'Unauthorized - please login', onClose: () => setCrudToast({ open: false, msg: '' }) })
         router.push('/login')
         return
       }
-      const res = await fetch('/api/gst')
+      const res = await fetch('/api/gst', { credentials: 'include' })
       const list = await res.json().catch(() => null)
       if (res.ok && Array.isArray(list)) setRows(list)
       else setRows([])

@@ -47,7 +47,7 @@ export default function ContactsPage() {
   useEffect(() => {
     ; (async () => {
       try {
-        const res = await fetch('/api/contacts')
+        const res = await fetch('/api/contacts', { credentials: 'include' })
         const data = await res.json().catch(() => null)
         if (res.status === 401) {
           setCrudToast({ open: true, msg: 'Unauthorized - please login', onClose: () => setCrudToast({ open: false, msg: '' }) })
@@ -77,8 +77,8 @@ export default function ContactsPage() {
 
     const payload: Record<string, unknown> = { name, contact_number: contactNumber, company, designation, birthday, email, other_details: otherInfo }
     if (editingRow) payload.id = editingRow.id
-    await fetch('/api/contacts', { method: 'POST', body: JSON.stringify(payload) })
-    const list = await fetch('/api/contacts').then((r) => r.json())
+    await fetch('/api/contacts', { method: 'POST', body: JSON.stringify(payload), credentials: 'include' })
+    const list = await fetch('/api/contacts', { credentials: 'include' }).then((r) => r.json())
     setRows(list || [])
     setOpen(false)
     setEditingRow(null)
@@ -92,7 +92,7 @@ export default function ContactsPage() {
 
   async function confirmDelete() {
     if (!pendingDelete) return
-    await fetch(`/api/contacts?id=${pendingDelete.id}`, { method: 'DELETE' })
+    await fetch(`/api/contacts?id=${pendingDelete.id}`, { method: 'DELETE', credentials: 'include' })
     setRows((x) => x.filter((y) => y.id !== pendingDelete.id))
     setConfirmOpen(false)
     setCrudToast({ open: true, msg: 'Contact deleted', actionLabel: 'Undo', onAction: undoDelete })
@@ -101,8 +101,8 @@ export default function ContactsPage() {
   async function undoDelete() {
     if (!pendingDelete) return
     const payload = { name: pendingDelete.name, contact_number: pendingDelete.contact_number }
-    await fetch('/api/contacts', { method: 'POST', body: JSON.stringify(payload) })
-    const list = await fetch('/api/contacts').then((r) => r.json())
+    await fetch('/api/contacts', { method: 'POST', body: JSON.stringify(payload), credentials: 'include' })
+    const list = await fetch('/api/contacts', { credentials: 'include' }).then((r) => r.json())
     setRows(list || [])
     setPendingDelete(null)
     setCrudToast({ open: true, msg: 'Contact restored', onClose: () => setCrudToast({ open: false, msg: '' }) })

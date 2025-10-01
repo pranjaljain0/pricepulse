@@ -45,7 +45,7 @@ export default function BankAccountsPage() {
   useEffect(() => {
     ; (async () => {
       try {
-        const res = await fetch('/api/bankaccounts')
+        const res = await fetch('/api/bankaccounts', { credentials: 'include' })
         const data = await res.json().catch(() => null)
         if (res.status === 401) {
           setCrudToast({ open: true, msg: 'Unauthorized - please login', onClose: () => setCrudToast({ open: false, msg: '' }) })
@@ -94,10 +94,10 @@ export default function BankAccountsPage() {
       other_details: otherDetails,
     };
     if (editingRow) body.id = editingRow.id;
-    await fetch('/api/bankaccounts', { method: 'POST', body: JSON.stringify(body) });
+    await fetch('/api/bankaccounts', { method: 'POST', body: JSON.stringify(body), credentials: 'include' });
     // reload
     try {
-      const res = await fetch('/api/bankaccounts')
+      const res = await fetch('/api/bankaccounts', { credentials: 'include' })
       if (res.status === 401) {
         setCrudToast({ open: true, msg: 'Unauthorized - please login', onClose: () => setCrudToast({ open: false, msg: '' }) })
         router.push('/login')
@@ -124,7 +124,7 @@ export default function BankAccountsPage() {
   async function confirmDelete() {
     if (!pendingDelete) return;
     const id = pendingDelete.id;
-    await fetch(`/api/bankaccounts?id=${id}`, { method: 'DELETE' });
+    await fetch(`/api/bankaccounts?id=${id}`, { method: 'DELETE', credentials: 'include' });
     setRows((r) => r.filter((x) => x.id !== id));
     setConfirmOpen(false);
     setCrudToast({ open: true, msg: 'Bank account deleted', actionLabel: 'Undo', onAction: undoDelete });
@@ -143,9 +143,9 @@ export default function BankAccountsPage() {
       cif: pendingDelete.cif,
       other_details: pendingDelete.other_details,
     };
-    await fetch('/api/bankaccounts', { method: 'POST', body: JSON.stringify(payload) });
+    await fetch('/api/bankaccounts', { method: 'POST', body: JSON.stringify(payload), credentials: 'include' });
     try {
-      const res = await fetch('/api/bankaccounts')
+      const res = await fetch('/api/bankaccounts', { credentials: 'include' })
       if (res.status === 401) {
         setCrudToast({ open: true, msg: 'Unauthorized - please login', onClose: () => setCrudToast({ open: false, msg: '' }) })
         router.push('/login')

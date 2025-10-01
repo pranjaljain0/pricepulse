@@ -1,1 +1,9 @@
-[]
+[
+  {
+    "username": "admin",
+    "hash": "66ef4eb97682c9dec3d4e8ec915203e7a4b2f3e3d400995ffa525996a927707cc95e9d8d905932b2d9ca8c57de21c456b39f9aa342fe2c35def33485ec5f35ef",
+    "salt": "c64d589c59947151482e085f68b5d221",
+    "iterations": 310000,
+    "profile": {}
+  }
+]

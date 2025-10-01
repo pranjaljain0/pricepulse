@@ -11,22 +11,29 @@ export default function ProfilePage() {
     const [toast, setToast] = useState<{ open: boolean; msg: string }>({ open: false, msg: '' });
 
     useEffect(() => {
-        fetch('/api/auth/me').then((r) => r.json()).then((data) => {
-            if (data && data.profile) {
-                setName(data.profile.name || ''); setEmail(data.profile.email || ''); setContact(data.profile.contact || '');
+        ; (async () => {
+            try {
+                const res = await fetch('/api/auth/me', { credentials: 'include' })
+                if (!res.ok) return
+                const data = await res.json().catch(() => null)
+                if (data && data.profile) {
+                    setName(data.profile.name || ''); setEmail(data.profile.email || ''); setContact(data.profile.contact || '');
+                }
+            } catch {
+                // ignore
             }
-        }).catch(() => { })
+        })()
     }, [])
 
     async function save() {
-        await fetch('/api/auth/me', { method: 'POST', body: JSON.stringify({ name, email, contact }) })
+        await fetch('/api/auth/me', { method: 'POST', body: JSON.stringify({ name, email, contact }), credentials: 'include' })
         setToast({ open: true, msg: 'Profile saved' })
     }
 
     async function changePassword() {
         const pw = prompt('New password')
         if (!pw) return
-        await fetch('/api/auth/change-password', { method: 'POST', body: JSON.stringify({ password: pw }) })
+        await fetch('/api/auth/change-password', { method: 'POST', body: JSON.stringify({ password: pw }), credentials: 'include' })
         setToast({ open: true, msg: 'Password changed' })
     }
 

@@ -22,6 +22,6 @@ export async function POST(request: Request) {
     const token = issueToken(body.username)
     const res = NextResponse.json({ ok: true, hasUsers: true })
     // set HttpOnly cookie via NextResponse API
-    res.cookies.set({ name: 'session', value: token, httpOnly: true, path: '/', sameSite: 'strict' })
+    res.cookies.set({ name: 'session', value: token, httpOnly: true, path: '/', sameSite: 'lax' })
     return res
 }
