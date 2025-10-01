@@ -1,0 +1,48 @@
+version: "3.8"
+
+services:
+  pricepulse:
+    image: pranjaljain0/pricepulse:latest
+    container_name: pricepulse-app
+    platform: linux/amd64
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - INFLUXDB_URL=http://100.77.165.98:8086
+      - INFLUXDB_TOKEN=my-super-secret-token
+      - INFLUXDB_ORG=my-org
+      - INFLUXDB_BUCKET=my-bucket
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3000/api/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: Add InfluxDB if you want to run it locally for development
+  # influxdb:
+  #   image: influxdb:2.7-alpine
+  #   container_name: pricepulse-influxdb
+  #   ports:
+  #     - "8086:8086"
+  #   environment:
+  #     - DOCKER_INFLUXDB_INIT_MODE=setup
+  #     - DOCKER_INFLUXDB_INIT_USERNAME=admin
+  #     - DOCKER_INFLUXDB_INIT_PASSWORD=password123
+  #     - DOCKER_INFLUXDB_INIT_ORG=pricepulse
+  #     - DOCKER_INFLUXDB_INIT_BUCKET=metrics
+  #   volumes:
+  #     - influxdb_data:/var/lib/influxdb2
+  #   restart: unless-stopped
+# volumes:
+#   influxdb_data:
