@@ -2,6 +2,7 @@ import "./globals.css";
 
 import { Geist, Geist_Mono } from "next/font/google";
 
+import AuthGate from "../components/AuthGate";
 import type { Metadata } from "next";
 import Sidebar from "../components/Sidebar";
 
@@ -33,7 +34,9 @@ export default function RootLayout({
         <div className="min-h-screen bg-background text-foreground font-sans">
           <div className="max-w-[1200px] mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-[260px_1fr] gap-8">
             <Sidebar />
-            <main>{children}</main>
+            <main>
+              <AuthGate>{children}</AuthGate>
+            </main>
           </div>
         </div>
       </body>

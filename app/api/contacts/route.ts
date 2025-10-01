@@ -1,6 +1,7 @@
 import { queryFlux, writePoint } from '../../../lib/influx'
 
 import { NextResponse } from 'next/server'
+import { requireAuth } from '../../../lib/auth'
 
 type Contact = {
     id: string
@@ -14,7 +15,9 @@ type Contact = {
     _time?: string
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+    const auth = requireAuth(request)
+    if (typeof auth !== 'string') return auth
     const flux = `from(bucket: "${process.env.INFLUXDB_BUCKET}")
     |> range(start: -30d)
     |> filter(fn: (r) => r._measurement == "contacts")
@@ -52,7 +55,10 @@ export async function GET() {
         if (latestObj) {
             const deletedVal = latestObj['deleted']
             if (deletedVal !== true) {
-                result.push(latestObj as Contact)
+                const owner = typeof latestObj['owner'] === 'string' ? latestObj['owner'] : undefined
+                if (!owner || owner === auth) {
+                    result.push(latestObj as Contact)
+                }
             }
         }
     })
@@ -61,12 +67,14 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+    const auth = requireAuth(request)
+    if (typeof auth !== 'string') return auth
     const body = await request.json()
     if (!body.name || !body.contact_number) {
         return NextResponse.json({ error: 'name and contact_number are required' }, { status: 400 })
     }
     const id = body.id ? String(body.id) : String(Date.now())
-    await writePoint('contacts', { id }, {
+    await writePoint('contacts', { id, owner: auth }, {
         name: body.name || '',
         company: body.company || '',
         designation: body.designation || '',
@@ -80,6 +88,8 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+    const auth = requireAuth(request)
+    if (typeof auth !== 'string') return auth
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
     if (!id) return NextResponse.json({ error: 'missing id' }, { status: 400 })
@@ -90,7 +100,7 @@ export async function DELETE(request: Request) {
     const body = {
         start: '1970-01-01T00:00:00Z',
         stop: new Date().toISOString(),
-        predicate: `_measurement="contacts" AND id="${id}"`
+        predicate: `_measurement="contacts" AND id="${id}" AND owner="${auth}"`
     }
 
     await fetch(url, {

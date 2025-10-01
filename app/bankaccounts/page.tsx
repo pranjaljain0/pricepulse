@@ -9,6 +9,7 @@ import IconButton from "../../components/Interactive";
 import Modal from "../../components/Modal";
 import PlusButton from "../../components/PlusButton";
 import Snackbar from "../../components/Snackbar";
+import { useRouter } from 'next/navigation'
 
 type Row = {
   id: string;
@@ -23,6 +24,7 @@ type Row = {
 };
 
 export default function BankAccountsPage() {
+  const router = useRouter()
   const [rows, setRows] = useState<Row[]>([]);
   const [open, setOpen] = useState(false);
   const [accountNumber, setAccountNumber] = useState("");
@@ -41,11 +43,28 @@ export default function BankAccountsPage() {
   const [copySnack, setCopySnack] = useState<{ open: boolean; msg: string }>({ open: false, msg: '' });
 
   useEffect(() => {
-    fetch('/api/bankaccounts')
-      .then((r) => r.json())
-      .then((data) => setRows(data || []))
-      .catch(() => setRows([]))
-  }, []);
+    ; (async () => {
+      try {
+        const res = await fetch('/api/bankaccounts')
+        const data = await res.json().catch(() => null)
+        if (res.status === 401) {
+          setCrudToast({ open: true, msg: 'Unauthorized - please login', onClose: () => setCrudToast({ open: false, msg: '' }) })
+          router.push('/login')
+          return
+        }
+        if (!res.ok) {
+          setRows([])
+          setCrudToast({ open: true, msg: (data && (data.error || data.message)) || 'Failed to load bank accounts', onClose: () => setCrudToast({ open: false, msg: '' }) })
+        } else if (Array.isArray(data)) {
+          setRows(data)
+        } else {
+          setRows([])
+        }
+      } catch {
+        setRows([])
+      }
+    })()
+  }, [router]);
 
   async function addRow() {
     const nextErrors: Record<string, string> = {};
@@ -77,8 +96,19 @@ export default function BankAccountsPage() {
     if (editingRow) body.id = editingRow.id;
     await fetch('/api/bankaccounts', { method: 'POST', body: JSON.stringify(body) });
     // reload
-    const list = await fetch('/api/bankaccounts').then((r) => r.json());
-    setRows(list || []);
+    try {
+      const res = await fetch('/api/bankaccounts')
+      if (res.status === 401) {
+        setCrudToast({ open: true, msg: 'Unauthorized - please login', onClose: () => setCrudToast({ open: false, msg: '' }) })
+        router.push('/login')
+        return
+      }
+      const list = await res.json().catch(() => null)
+      if (res.ok && Array.isArray(list)) setRows(list)
+      else setRows([])
+    } catch {
+      setRows([])
+    }
     setAccountNumber(''); setAccountHolder(''); setBank(''); setBranch(''); setIfsc(''); setCif('');
     setOtherDetails('');
     setOpen(false);
@@ -114,8 +144,19 @@ export default function BankAccountsPage() {
       other_details: pendingDelete.other_details,
     };
     await fetch('/api/bankaccounts', { method: 'POST', body: JSON.stringify(payload) });
-    const list = await fetch('/api/bankaccounts').then((r) => r.json());
-    setRows(list || []);
+    try {
+      const res = await fetch('/api/bankaccounts')
+      if (res.status === 401) {
+        setCrudToast({ open: true, msg: 'Unauthorized - please login', onClose: () => setCrudToast({ open: false, msg: '' }) })
+        router.push('/login')
+        return
+      }
+      const list = await res.json().catch(() => null)
+      if (res.ok && Array.isArray(list)) setRows(list)
+      else setRows([])
+    } catch {
+      setRows([])
+    }
     setPendingDelete(null);
     setCrudToast({ open: true, msg: 'Bank account restored', onClose: () => setCrudToast({ open: false, msg: '' }) });
   }

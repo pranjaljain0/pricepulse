@@ -9,10 +9,12 @@ import IconButton from "../../components/Interactive";
 import Modal from "../../components/Modal";
 import PlusButton from "../../components/PlusButton";
 import Snackbar from "../../components/Snackbar";
+import { useRouter } from 'next/navigation'
 
 type GSTRow = { id: string; gstNumber?: string; businessName?: string; other_details?: string; _time?: string };
 
 export default function GSTPage() {
+  const router = useRouter()
   const [rows, setRows] = useState<GSTRow[]>([]);
   const [open, setOpen] = useState(false);
   const [gstNumber, setGstNumber] = useState("");
@@ -27,11 +29,28 @@ export default function GSTPage() {
   const [crudToast, setCrudToast] = useState<{ open: boolean; msg: string; actionLabel?: string; onAction?: (() => void) | null; onClose?: (() => void) | null }>({ open: false, msg: '' });
 
   useEffect(() => {
-    fetch('/api/gst')
-      .then((r) => r.json())
-      .then((data) => setRows(data || []))
-      .catch(() => setRows([]))
-  }, []);
+    ; (async () => {
+      try {
+        const res = await fetch('/api/gst')
+        const data = await res.json().catch(() => null)
+        if (res.status === 401) {
+          setCrudToast({ open: true, msg: 'Unauthorized - please login', onClose: () => setCrudToast({ open: false, msg: '' }) })
+          router.push('/login')
+          return
+        }
+        if (!res.ok) {
+          setRows([])
+          setCrudToast({ open: true, msg: (data && (data.error || data.message)) || 'Failed to load GST entries', onClose: () => setCrudToast({ open: false, msg: '' }) })
+        } else if (Array.isArray(data)) {
+          setRows(data)
+        } else {
+          setRows([])
+        }
+      } catch {
+        setRows([])
+      }
+    })()
+  }, [router]);
 
   async function addRow() {
     const nextErrors: Record<string, string> = {};
@@ -42,9 +61,20 @@ export default function GSTPage() {
     type PostPayload = { id?: string; gstNumber: string; businessName: string; other_details?: string };
     const body: PostPayload = { gstNumber, businessName, other_details: otherDetails };
     if (editingRow) body.id = editingRow.id;
-    await fetch('/api/gst', { method: 'POST', body: JSON.stringify(body) });
-    const list = await fetch('/api/gst').then((r) => r.json());
-    setRows(list || []);
+    try {
+      const postRes = await fetch('/api/gst', { method: 'POST', body: JSON.stringify(body) })
+      if (postRes.status === 401) {
+        setCrudToast({ open: true, msg: 'Unauthorized - please login', onClose: () => setCrudToast({ open: false, msg: '' }) })
+        router.push('/login')
+        return
+      }
+      const res = await fetch('/api/gst')
+      const list = await res.json().catch(() => null)
+      if (res.ok && Array.isArray(list)) setRows(list)
+      else setRows([])
+    } catch {
+      setRows([])
+    }
     setGstNumber(''); setBusinessName(''); setOpen(false);
     setOtherDetails('');
   }
@@ -66,9 +96,20 @@ export default function GSTPage() {
   async function undoDelete() {
     if (!pendingDelete) return;
     const payload = { gstNumber: pendingDelete.gstNumber, businessName: pendingDelete.businessName };
-    await fetch('/api/gst', { method: 'POST', body: JSON.stringify(payload) });
-    const list = await fetch('/api/gst').then((r) => r.json());
-    setRows(list || []);
+    try {
+      const postRes = await fetch('/api/gst', { method: 'POST', body: JSON.stringify(payload) })
+      if (postRes.status === 401) {
+        setCrudToast({ open: true, msg: 'Unauthorized - please login', onClose: () => setCrudToast({ open: false, msg: '' }) })
+        router.push('/login')
+        return
+      }
+      const res = await fetch('/api/gst')
+      const list = await res.json().catch(() => null)
+      if (res.ok && Array.isArray(list)) setRows(list)
+      else setRows([])
+    } catch {
+      setRows([])
+    }
     setPendingDelete(null);
     setCrudToast({ open: true, msg: 'GST entry restored', onClose: () => setCrudToast({ open: false, msg: '' }) });
   }

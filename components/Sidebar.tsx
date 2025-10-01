@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import Image from "next/image";
+import { usePathname } from 'next/navigation'
 
 const menuItems = [
     { name: "Bank Accounts", href: "bankaccounts" },
@@ -10,9 +11,15 @@ const menuItems = [
     { name: "Contacts", href: "contacts" }
 ];
 
+const extraItems = [
+    { name: 'Profile', href: 'profile' }
+]
+
 export default function Sidebar() {
+    const pathname = usePathname()
     const [theme, setTheme] = useState<"dark" | "light">("dark");
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [username, setUsername] = useState<string | null>(null);
 
     useEffect(() => {
         const stored = typeof window !== "undefined" ? localStorage.getItem("theme") : null;
@@ -34,6 +41,21 @@ export default function Sidebar() {
             localStorage.setItem("theme", "light");
         }
     }, [theme]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return
+        const u = localStorage.getItem('authUser')
+        if (u) {
+            try { setUsername(JSON.parse(u).username) } catch { setUsername(null) }
+        } else setUsername(null)
+    }, [])
+
+    if (pathname === '/login' || pathname === '/create-user') return null
+
+    function logout() {
+        localStorage.removeItem('authUser')
+        window.location.href = '/login'
+    }
 
     return (
         <aside className="bg-card border border-border rounded-lg p-4 shadow-sm md:sticky md:top-0 md:box-border ">
@@ -86,15 +108,25 @@ export default function Sidebar() {
                     <a key={item.href} className="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-accent hover:text-accent-foreground"
                         href={item.href}>{item.name}</a>
                 ))}
+                {extraItems.map((item) => (
+                    <a key={item.href} className="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-accent hover:text-accent-foreground" href={item.href}>{item.name}</a>
+                ))}
             </nav>
 
             <div className={`mt-6 border-t border-border pt-4 ${mobileOpen ? 'block' : 'hidden'} md:block`}>
-                <p className="text-xs text-muted-foreground">Resources</p>
-                <ul className="mt-2 text-sm list-disc list-inside">
-                    <li>
-                        <a className="hover:underline" href="https://nextjs.org/docs">Next.js docs</a>
-                    </li>
-                </ul>
+                <div className="mt-2">
+                    {username ? (
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <div className="text-sm font-medium">{username}</div>
+                                <div className="text-xs text-muted-foreground">Signed in</div>
+                            </div>
+                            <button onClick={logout} className="text-sm rounded border px-2 py-1">Logout</button>
+                        </div>
+                    ) : (
+                        <a className="text-sm rounded border px-2 py-1 inline-block" href="/login">Sign in</a>
+                    )}
+                </div>
             </div>
         </aside>
     );

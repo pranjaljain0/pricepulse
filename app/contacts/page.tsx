@@ -10,6 +10,7 @@ import IconButton from "../../components/Interactive";
 import Modal from "../../components/Modal";
 import PlusButton from "../../components/PlusButton";
 import Snackbar from "../../components/Snackbar";
+import { useRouter } from 'next/navigation'
 
 type ContactRow = { id: string; name?: string; company?: string; designation?: string; birthday?: string; contact_number?: string; email?: string; other_details?: string; _time?: string };
 
@@ -24,6 +25,7 @@ const ALL_FIELDS: Array<{ key: keyof ContactRow; label: string }> = [
 ]
 
 export default function ContactsPage() {
+  const router = useRouter()
   const [rows, setRows] = useState<ContactRow[]>([]);
   const [open, setOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<ContactRow | null>(null);
@@ -43,8 +45,28 @@ export default function ContactsPage() {
   const [visible, setVisible] = useState<Array<keyof ContactRow>>(['name', 'contact_number']);
 
   useEffect(() => {
-    fetch('/api/contacts').then((r) => r.json()).then((d) => setRows(d || [])).catch(() => setRows([]))
-  }, [])
+    ; (async () => {
+      try {
+        const res = await fetch('/api/contacts')
+        const data = await res.json().catch(() => null)
+        if (res.status === 401) {
+          setCrudToast({ open: true, msg: 'Unauthorized - please login', onClose: () => setCrudToast({ open: false, msg: '' }) })
+          router.push('/login')
+          return
+        }
+        if (!res.ok) {
+          setRows([])
+          setCrudToast({ open: true, msg: (data && (data.error || data.message)) || 'Failed to load contacts', onClose: () => setCrudToast({ open: false, msg: '' }) })
+        } else if (Array.isArray(data)) {
+          setRows(data)
+        } else {
+          setRows([])
+        }
+      } catch {
+        setRows([])
+      }
+    })()
+  }, [router])
 
   async function save() {
     const nextErr: Record<string, string> = {}

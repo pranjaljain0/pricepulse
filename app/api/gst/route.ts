@@ -1,6 +1,7 @@
 import { queryFlux, writePoint } from '../../../lib/influx'
 
 import { NextResponse } from 'next/server'
+import { requireAuth } from '../../../lib/auth'
 
 type GST = {
     id: string
@@ -10,7 +11,9 @@ type GST = {
     _time?: string
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+    const auth = requireAuth(request)
+    if (typeof auth !== 'string') return auth
     const flux = `from(bucket: "${process.env.INFLUXDB_BUCKET}")
     |> range(start: -30d)
     |> filter(fn: (r) => r._measurement == "gst_info")
@@ -48,7 +51,11 @@ export async function GET() {
         if (latestObj) {
             const deletedVal = latestObj['deleted']
             if (deletedVal !== true) {
-                result.push(latestObj as GST)
+                // owner may be present as a tag on some rows; only include if owner matches
+                const owner = typeof latestObj['owner'] === 'string' ? latestObj['owner'] : undefined
+                if (!owner || owner === auth) {
+                    result.push(latestObj as GST)
+                }
             }
         }
     })
@@ -57,6 +64,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+    const auth = requireAuth(request)
+    if (typeof auth !== 'string') return auth
     const body = await request.json()
     if (!body.gstNumber || !body.businessName) {
         return NextResponse.json({ error: 'gstNumber and businessName are required' }, { status: 400 })
@@ -67,7 +76,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'invalid gstNumber format' }, { status: 400 })
     }
     const id = body.id ? String(body.id) : String(Date.now())
-    await writePoint('gst_info', { id }, {
+    await writePoint('gst_info', { id, owner: auth }, {
         gstNumber: body.gstNumber || '',
         businessName: body.businessName || '',
         other_details: body.other_details || '',
@@ -77,6 +86,8 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+    const auth = requireAuth(request)
+    if (typeof auth !== 'string') return auth
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
     if (!id) return NextResponse.json({ error: 'missing id' }, { status: 400 })
@@ -87,7 +98,7 @@ export async function DELETE(request: Request) {
     const body = {
         start: '1970-01-01T00:00:00Z',
         stop: new Date().toISOString(),
-        predicate: `_measurement="gst_info" AND id="${id}"`
+        predicate: `_measurement="gst_info" AND id="${id}" AND owner="${auth}"`
     }
 
     await fetch(url, {
