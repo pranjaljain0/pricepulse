@@ -1,0 +1,7 @@
+node_modules
+    .next
+dist
+npm - debug.log
+    .env *
+    pnpm - lock.yaml
+package - lock.json
