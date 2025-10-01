@@ -5,5 +5,5 @@ npm - debug.log
     .env
 pnpm - lock.yaml
 package - lock.json
-    /.git
-    /.gitignore
+    .git
+    .gitignore
