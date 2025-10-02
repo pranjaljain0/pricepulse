@@ -4,7 +4,6 @@ services:
   pricepulse:
     image: pranjaljain0/pricepulse:latest
     container_name: pricepulse-app
-    platform: linux/amd64
     ports:
       - "3000:3000"
     environment:
